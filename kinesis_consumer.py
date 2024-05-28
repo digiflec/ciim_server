@@ -5,11 +5,11 @@ from kinesis_stream import KinesisStream
 
 kinesis_client = boto3.client("kinesis")
 
-stream = KinesisStream('office3-outsight-objects', create_if_not_found=False)
+stream = KinesisStream('office3-cron-objects', create_if_not_found=False)
 
 
-records = stream.get_records(1000)
+records_gen = stream.get_records_iter()
 
-for record in records:
+for record in records_gen:
     print(record)
 
