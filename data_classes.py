@@ -15,6 +15,20 @@ from pyquaternion import Quaternion
 
 from geometry_utils import view_points, transform_matrix
 
+def string2array(data_string):
+
+    lines = data_string.replace("[", "").replace("]", "")
+
+    lines = lines.strip().splitlines()
+    data = []
+
+    for line in lines:
+        cleaned_line = line.strip().split()
+
+        data.append([float(x) for x in cleaned_line])
+
+    array = np.array(data)
+    return array
 
 class Box:
     """ Simple data class representing a 3d box including, label, score and velocity. """
@@ -98,7 +112,14 @@ class Box:
         self.orientation = quaternion * self.orientation
         self.velocity = np.dot(quaternion.rotation_matrix, self.velocity)
 
-    def transform(self, )
+    def rotate_from_matrix(self, rotation_matrix):
+        if rotation_matrix.shape != (3, 3):
+            raise ValueError("Rotation matrix must be 3x3")
+
+        self.center = np.dot(rotation_matrix, self.center)
+        self.orientation = np.dot(rotation_matrix, self.orientation)
+        self.velocity = np.dot(rotation_matrix, self.velocity)
+
 
     def corners(self, wlh_factor: float = 1.0) -> np.ndarray:
         """

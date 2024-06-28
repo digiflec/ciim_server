@@ -136,7 +136,7 @@ class KinesisStream:
     # snippet-end:[python.example_code.kinesis.PutRecord]
 
     # snippet-start:[python.example_code.kinesis.GetRecords]
-    def get_records(self, max_records):
+    def get_records(self, limit):
         """
         Gets records from the stream. This function is a generator that first gets
         a shard iterator for the stream, then uses the shard iterator to get records
@@ -147,28 +147,32 @@ class KinesisStream:
         :return: Yields the current batch of retrieved records.
         """
         try:
-            response = self.kinesis_client.get_shard_iterator(
-                StreamName=self.name,
-                ShardId=self.details["Shards"][0]["ShardId"],
-                ShardIteratorType="LATEST",
-            )
-            shard_iter = response["ShardIterator"]
-            record_count = 0
-            while record_count < max_records:
-                response = self.kinesis_client.get_records(
-                    ShardIterator=shard_iter, Limit=10
+            records_found = 0
+            while not records_found:
+                response = self.kinesis_client.get_shard_iterator(
+                    StreamName=self.name,
+                    ShardId=self.details["Shards"][0]["ShardId"],
+                    ShardIteratorType="LATEST",
                 )
-                shard_iter = response["NextShardIterator"]
+                shard_iter = response["ShardIterator"]
+                
+                response = self.kinesis_client.get_records(
+                    ShardIterator=shard_iter, Limit=limit
+                )
+                # print(response)
                 records = response["Records"]
+                if len(records) > 0: records_found = 1
+                shard_iter = response["NextShardIterator"]
+                
                 logger.info("Got %s records.", len(records))
-                record_count += len(records)
-                yield records
+                
+            return records
         except ClientError:
             logger.exception("Couldn't get records from stream %s.", self.name)
             raise
     # snippet-end:[python.example_code.kinesis.GetRecords]
 
-    def get_records_iter(self):
+    def get_records_iter(self, shard_iter_type = "LATEST"):
         """
         Gets records from the stream. This function is a generator that first gets
         a shard iterator for the stream, then uses the shard iterator to get records
@@ -181,8 +185,8 @@ class KinesisStream:
         try:
             response = self.kinesis_client.get_shard_iterator(
                 StreamName=self.name,
-                ShardId=self.details["Shards"][0]["ShardId"],
-                ShardIteratorType="LATEST",
+                ShardId=self.details["Shards"][2]["ShardId"],
+                ShardIteratorType=shard_iter_type,
             )
             shard_iter = response["ShardIterator"]
 
